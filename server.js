@@ -2,8 +2,6 @@ import router from './routes/index';
 
 const express = require('express');
 
-// const indexRoutes = require('./routes/index');
-
 const app = express();
 const port = process.env.PORT || 5000;
 
