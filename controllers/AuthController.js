@@ -44,7 +44,6 @@ class AuthController {
 
   static async getMe(request, response) {
     const { userId } = await userUtils.getUserIdAndKey(request);
-    console.log('userId', userId);
     if (!userId) {
       return response.status(401).send({ error: 'Unauthorized' });
     }

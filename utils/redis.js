@@ -27,7 +27,7 @@ class RedisClient {
 
   async del(key) {
     // this.client.del(key);
-    promisify(this.client.DEL).apply(this.client)(key);
+    promisify(this.client.DEL).bind(this.client)(key);
   }
 }
 
