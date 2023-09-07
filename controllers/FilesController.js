@@ -13,7 +13,6 @@ class FilesController {
       return response.status(401).send({ error: 'Unauthorized' });
     }
     const user = await dbClient.usersCollection.findOne({ _id: ObjectId(userId) });
-    console.log(user);
     const {
       name, type, parentId = 0, isPublic = false, data,
     } = request.body;
@@ -62,7 +61,6 @@ class FilesController {
 
     fileToUpload.localPath = filePath;
     const file = await dbClient.filesCollection.insertOne(fileToUpload);
-    console.log(file);
 
     return response.status(201).send({
       id: file.ops[0]._id,
@@ -72,6 +70,85 @@ class FilesController {
       isPublic: file.ops[0].isPublic,
       parentId: file.ops[0].parentId,
     });
+  }
+
+  static async getShow(request, response) {
+    const fileId = request.params.id;
+    const { userId } = await userUtils.getUserIdAndKey(request);
+    if (!userId) {
+      return response.status(401).send({ error: 'Unauthorized' });
+    }
+    const user = await dbClient.usersCollection.findOne({ _id: ObjectId(userId) });
+    const file = await dbClient.filesCollection.findOne({
+      _id: ObjectId(fileId),
+      userId: user._id,
+    });
+    if (!file) return response.status(404).send({ error: 'Not found' });
+    return response.status(200).send({
+      id: file._id,
+      userId: file.userId,
+      name: file.name,
+      type: file.type,
+      isPublic: file.isPublic,
+      parentId: file.parentId,
+    });
+  }
+
+  static async getIndex(request, response) {
+    const parentId = request.query.parentId || 0;
+    const page = request.query.page || 0;
+    const { userId } = await userUtils.getUserIdAndKey(request);
+    const user = await dbClient.usersCollection.findOne({ _id: ObjectId(userId) });
+    if (!user) {
+      return response.status(401).send({ error: 'Unauthorized' });
+    }
+    const pipeline = [
+      { $match: { parentId } },
+      { $skip: page * 20 },
+      {
+        $limit: 20,
+      },
+    ];
+    const files = await dbClient.filesCollection.aggregate(pipeline).toArray();
+    const filesToReturn = files.map((file) => ({
+      id: file._id,
+      userId: file.userId,
+      name: file.name,
+      type: file.type,
+      isPublic: file.isPublic,
+      parentId: file.parentId,
+    }));
+    return response.status(200).send(filesToReturn);
+  }
+
+  static async putPublish(request, response) {
+    const { userId } = await userUtils.getUserIdAndKey(request);
+    const user = await dbClient.usersCollection.findOne({ _id: ObjectId(userId) });
+    if (!user) {
+      return response.status(401).send({ error: 'Unauthorized' });
+    }
+    const { id } = request.params;
+    const file = await dbClient.filesCollection.findOne({ _id: ObjectId(id), userId: user._id });
+    if (!file) return response.status(404).send({ error: 'Not found' });
+    await dbClient.filesCollection.updateOne({ _id: ObjectId(id) }, { $set: { isPublic: true } });
+    const UpdatedFile = await dbClient.files.findOne({ _id: ObjectId(id), userId: user._id });
+
+    return response.status(200).send({
+      id: UpdatedFile._id,
+      userId: UpdatedFile.userId,
+      name: UpdatedFile.name,
+      type: UpdatedFile.type,
+      isPublic: UpdatedFile.isPublic,
+      parentId: UpdatedFile.parentId,
+    });
+  }
+
+  static async putUnPublish(request, response) {
+    const { userId } = await userUtils.getUserIdAndKey(request);
+    const user = await dbClient.usersCollection.findOne({ _id: ObjectId(userId) });
+    if (!user) {
+      return response.status(401).send({ error: 'Unauthorized' });
+    }
   }
 }
 
