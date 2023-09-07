@@ -149,6 +149,20 @@ class FilesController {
     if (!user) {
       return response.status(401).send({ error: 'Unauthorized' });
     }
+    const { id } = request.params;
+    const file = await dbClient.filesCollection.findOne({ _id: ObjectId(id), userId: user._id });
+    if (!file) return response.status(404).send({ error: 'Not found' });
+    await dbClient.filesCollection.updateOne({ _id: ObjectId(id) }, { $set: { isPublic: false } });
+    const UpdatedFile = await dbClient.files.findOne({ _id: ObjectId(id), userId: user._id });
+
+    return response.status(200).send({
+      id: UpdatedFile._id,
+      userId: UpdatedFile.userId,
+      name: UpdatedFile.name,
+      type: UpdatedFile.type,
+      isPublic: UpdatedFile.isPublic,
+      parentId: UpdatedFile.parentId,
+    });
   }
 }
 
