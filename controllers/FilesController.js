@@ -164,6 +164,15 @@ class FilesController {
       parentId: UpdatedFile.parentId,
     });
   }
+
+  static async getFile(request, response) {
+    const { userId } = await userUtils.getUserIdAndKey(request);
+    const user = await dbClient.usersCollection.findOne({ _id: ObjectId(userId) });
+    if (!user) {
+      return response.status(401).send({ error: 'Unauthorized' });
+    }
+    const { id } = request.params;
+  }
 }
 
 export default FilesController;
